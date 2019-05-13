@@ -1,5 +1,18 @@
 function [events, licks] = processEvents(events, licks, blockTags)
 
+% deal with weird bonsai issue where stimON might be logged but trial not
+% complete
+todel = [];
+for i=1:numel(events.tags)
+    if strcmp(events.tags(i), "stimON")
+        if any(strcmp(events.tags(i+1), blockTags))
+            todel = [todel, i];
+        end
+    end
+end
+
+events.tags(todel) = [];
+
 events.trial.sonidx = find(events.tags=="stimON");
 events.trial.moveidx = find(events.tags=="dotsMOVE");
 events.trial.soffidx = find(events.tags=="stimOFF");
@@ -7,10 +20,13 @@ events.trial.respOpenidx = find(events.tags=="respOPEN");
 events.trial.respCloseidx = find(events.tags=="respCLOSED");
 % check for incomplete trials and delete tags from them
 if numel(events.trial.soffidx) < numel(events.trial.sonidx)
-    events.trial.sonidx = events.trial.sonidx(1:numel(events.trial.soffidx));
-    events.trial.moveidx = events.trial.moveidx(1:numel(events.trial.soffidx));
-    events.trial.soffidx = events.trial.soffidx(1:numel(events.trial.soffidx));
+     events.trial.sonidx = events.trial.sonidx(1:numel(events.trial.soffidx));
+     events.trial.moveidx = events.trial.moveidx(1:numel(events.trial.soffidx));
+     events.trial.soffidx = events.trial.soffidx(1:numel(events.trial.soffidx));
 end
+
+
+
 events.trial.sontimes = events.eTime(events.trial.sonidx); 
 events.trial.movetimes = events.eTime(events.trial.moveidx);
 events.trial.sofftimes = events.eTime(events.trial.soffidx);

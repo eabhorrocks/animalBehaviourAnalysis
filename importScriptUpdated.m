@@ -4,7 +4,7 @@
 % wheel (wheel input)
 % Licks (lick inputs)
 
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19027\Training\20190508'
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19027\Training\20190513'
 
 [events, params, wheel, licks] = importSessionFiles(folder);
 % check for duplicate files, in which case create seperate folders?
@@ -25,7 +25,7 @@ trial = genTrialStruct(events, params, wheel, licks);
 blockTags = {'passive', 'activeany', 'activenoabort', 'active'};
 [metrics,trial] = getSessionMetrics(trial, blockTags, 1); % plot flag
 
-
+ 
 
 %% When are mice licking?
 % need to define time periods of different epochs.

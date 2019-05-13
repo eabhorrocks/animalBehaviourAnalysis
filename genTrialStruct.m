@@ -12,6 +12,7 @@ for itrial = 1:numel(events.trial.sontimes) % completed trials...
     trial(itrial).rewardtime = [];
     
     % get tria block type, response window properties from event intervals
+    
     trial(itrial).block = events.blocks.tags(events.trial.sonidx(itrial)>...
         events.blocks.intervals(:,1) & events.trial.sonidx(itrial)<events.blocks.intervals(:,2));
     trial(itrial).respSize = events.respWin.sizeTags(events.trial.sonidx(itrial)>...
@@ -71,6 +72,10 @@ for itrial = 1:numel(trial)
         else
             trial(itrial).engaged = 0;
         end
+        
+            %fprintf(num2str(itrial))
+            %fprintf('skipping a passive trial')
+        
         % not passive trials
     else
         if (trial(itrial).response ~=3 && trial(itrial).manualReward==0)

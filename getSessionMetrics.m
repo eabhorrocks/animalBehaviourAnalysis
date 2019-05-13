@@ -123,7 +123,8 @@ for ibtype = 1:numel(blockTags)
                     end
                 end
                 
-                if (trial(idx(itrial)).response == 1 || trial(idx(itrial)).response == 2)
+                if ((trial(idx(itrial)).response == 1 || trial(idx(itrial)).response == 2)...
+                        && (trial(idx(itrial)).engaged == 1))
                     trial(idx(itrial)).correct2 = 1;
                 else trial(idx(itrial)).correct2 = 0;
                 end
@@ -217,14 +218,19 @@ ylabel('proportion of trials')
 xlabel('block type')
 title('Proportion of Trials ''Engaged'' (Valid Trials)')
 box off
+ylim([0 1])
 
 
 subplot(223)
+yyaxis left
 bar(labels, pCorrectVals)
 ylabel('proportion of engaged trials')
 xlabel('block type')
 title('Full correct Trials (as proportion of engaged)')
 box off
+ylim([0 1])
+yyaxis right
+plot(labels, [0.5 0.5 0.5 0.5], 'k--')
 
 subplot(224)
 bar(labels, pCorrect2Vals)
@@ -232,5 +238,6 @@ ylabel('proportion of engaged trials')
 xlabel('block type')
 title('Correct2 Trials (diff under diff condns)')
 box off
+ylim([0 1])
 end
 
