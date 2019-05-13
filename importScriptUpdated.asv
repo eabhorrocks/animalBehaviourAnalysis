@@ -4,153 +4,116 @@
 % wheel (wheel input)
 % Licks (lick inputs)
 
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19027\Training\300419'
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19027\Training\20190508'
 
 [events, params, wheel, licks] = importSessionFiles(folder);
-
-% %% Events
-% filePattern = fullfile(folder, 'Events*.*');
-% fileList = dir(filePattern);
-% if numel(fileList)>1, error('multiple event files detected'), end
-% eventsFileName = [fileList.folder, '\' fileList.name]
-% [events.tags,events.ts] = importEventsFile(eventsFileName);
-% 
-% %% Trial Params
-% filePattern = fullfile(folder, 'TrialParams*.*');
-% fileList = dir(filePattern);
-% if numel(fileList)>1, error('multiple trial param files detected'), end
-% paramsFileName = [fileList.folder, '\' fileList.name]
-% 
-% [params.trialID,params.trialDuration,params.dotSize,params.dotCol1,...
-%     params.dotCol2,params.numDots1,params.numDots2,params.dotLifeBool,...
-%     params.dotLifetime,params.contrast,params.velXLeft,params.velYLeft,...
-%     params.cohLeft,params.velXRight,params.velYRight,params.cohRight,...
-%     params.response,params.ts] = importParamsFile(paramsFileName, 2, inf);
-% 
-% %% Wheel
-% filePattern = fullfile(folder, 'Wheel*.*');
-% fileList = dir(filePattern);
-% if numel(fileList)>1, error('multiple wheel files detected'), end
-% wheelFileName = [fileList.folder, '\' fileList.name]
-% 
-% [wheel.pos,wheel.ts] = importWheelFile(wheelFileName);
-% 
-% % below needs fixing: use elapsed time, and convert to cm
-% wheel.pos(1) = wheel.pos(2); 
-% 
-% %% Licks
-% filePattern = fullfile(folder, 'Lick*.*');
-% fileList = dir(filePattern);
-% if numel(fileList)>1, error('multiple lick files detected'), end
-% licksFileName = [fileList.folder, '\' fileList.name]
-% 
-% [licks.leftLicks,licks.rightLicks,licks.ts] = importLicksFile(licksFileName, 2, inf);
-
-% 
-% %% convert datetimes to datenum and elapsed time
-% events.eTime = datenum(events.ts)*86400;
-% params.eTime = datenum(params.ts)*86400;
-% wheel.eTime = datenum(wheel.ts)*86400;
-% licks.eTime = datenum(licks.ts)*86400;
-% 
-% referenceTime = wheel.eTime(1);
-% 
-% events.eTime = events.eTime - referenceTime;
-% params.eTime = params.eTime - referenceTime;
-% wheel.eTime = wheel.eTime - referenceTime;
-% licks.eTime = licks.eTime - referenceTime;
+% check for duplicate files, in which case create seperate folders?
 
 %% get wheel speed
-idx = find(isnan(wheel.eTime));
+% wheel struct, smth window type, windowSize(bins)
+wheel = processWheel(wheel, 'gaussian', 10);
 
-for i = 1:numel(idx) % interpolate any NaNs in elapsed time
-    wheel.eTime(idx) = (wheel.eTime(idx-1) + wheel.eTime(idx+1) ) /2;
+%% Process events
+events.trial.sonidx = find(events.tags=="stimON");
+events.trial.moveidx = find(events.tags=="dotsMOVE");
+events.trial.soffidx = find(events.tags=="stimOFF");
+events.trial.respOpenidx = find(events.tags=="respOPEN");
+events.trial.respCloseidx = find(events.tags=="respCLOSED");
+% check for incomplete trials and delete tags from them
+if numel(events.trial.soffidx) < numel(events.trial.sonidx)
+    events.trial.sonidx = events.trial.sonidx(1:numel(events.trial.soffidx));
+    events.trial.moveidx = events.trial.moveidx(1:numel(events.trial.soffidx));
+    events.trial.soffidx = events.trial.soffidx(1:numel(events.trial.soffidx));
 end
+events.trial.sontimes = events.eTime(events.trial.sonidx); 
+events.trial.movetimes = events.eTime(events.trial.moveidx);
+events.trial.sofftimes = events.eTime(events.trial.soffidx);
+events.trial.respOpentimes = events.eTime(events.trial.respOpenidx);
+events.trial.respClosetimes = events.eTime(events.trial.respCloseidx);
 
-halfMax = max(wheel.pos)/2;
-wheel.unwrapped = unwrap(wheel.pos, halfMax);
-% not sure I have the right ticks per rev.
-wheel.dist = wheel2unit(wheel.unwrapped, 1024, 17.78); % pos, ticks/rev, wheel diam
-
-% this doesnt seem right? need to do movmw
-wheel.rawSpeed = diff(wheel.dist)./diff(wheel.eTime);
-wheel.rawSpeed = movmean(wheel.rawSpeed, 2);
-wheel.rawSpeed = [wheel.rawSpeed(1); wheel.rawSpeed];
-wheel.smthSpeed = smoothdata(wheel.rawSpeed,'gaussian',20);
-plot(wheel.eTime(1:1000), wheel.smthSpeed(1:1000))
-
- temp_speed = diff(wheel.pos);
- wheel.speed = movmean(temp_speed, 2);
-% wheel.speed = [wheel.speed(1); wheel.speed];
-% temp_acc = diff(wheel.speed);
-% wheel.acc = movmean(temp_acc, 2);
-% wheel.acc = [wheel.acc(1); wheel.acc];
+% get reward times using regexp, invariant to the valve opening times.
+events = getRewardTimes(events);
 
 
-%% Generate trials struct
-% TO DO: need to deal with if there was an extra trial added which wasn't
-% completed
-
-% find in elapsed time, the times of events related to each trial
-
-events.sonidx = find(events.tags=="stimON");
-events.moveidx = find(events.tags=="dotsMOVE");
-events.soffidx = find(events.tags=="stimOFF");
-
-if numel(events.soffidx) < numel(events.sonidx)
-    events.sonidx = events.sonidx(1:numel(events.soffidx));
-    events.moveidx = events.moveidx(1:numel(events.soffidx));
-    events.soffidx = events.soffidx(1:numel(events.soffidx));
-end
-
-events.sontimes = events.eTime(events.sonidx); % need to temp fix this for broken logging...just say movetime - 1;
-events.movetimes = events.eTime(events.moveidx);
-events.sofftimes = events.eTime(events.soffidx);
-events.sontimes = events.movetimes - 1; % comment out when fixed. %%%%%%%%%%%%%%%%
-
-events.rewardsidx = find(contains(events.tags, 'r') | contains(events.tags, 'l'));
-events.rewardtimes = events.eTime(events.rewardsidx);
-events.rewardstags = events.tags(events.rewardsidx);
-
-% generate a trial struct, with trial-centric information 
-trial = struct;
-for itrial = 1:numel(events.sontimes) % completed trials...
-    trial(itrial).onTime = events.sontimes(itrial);
-    trial(itrial).stimMoveTime = events.movetimes(itrial) -  trial(itrial).onTime;
-    trial(itrial).stimOffTime = events.sofftimes(itrial) - trial(itrial).onTime;
-    trial(itrial).velXL = params.velXLeft(itrial);
-    trial(itrial).velXR = params.velXRight(itrial);
-    trial(itrial).response = params.response(itrial);
-    % reward times (deals with manually given rewards which corrupt)
-    [~, rewardidx] = min(abs(events.sofftimes(itrial) - events.rewardtimes));
-    trial(itrial).rewardTime = events.rewardtimes(rewardidx) - trial(itrial).onTime;
-    trial(itrial).rewardTag = events.rewardstags(rewardidx);
-end
-
-
-%% trial-centric licking and running
 leftidx = 1 + find(diff(licks.leftLicks)==1);
 rightidx = 1 + find(diff(licks.rightLicks)==1);
 events.lickTimeL =  licks.eTime(leftidx);
 events.lickTimeR =  licks.eTime(rightidx);
 
+
+
+% get event.tag indexes for trial type changes
+blockTags = {'passive', 'activeany', 'activenoabort', 'active'};
+[events.blocks.intervals, events.blocks.tags, events.blocks.starts] =...
+    findIntervals(events.tags, blockTags, 'matches');
+
+% get event.tag indexes for respDelay and respSize value changes
+% this version could do with some error checking with diff input args
+tags = {'respDelay'};
+[events.respWin.delayIntervals, events.respWin.delayTags, ~] =...
+    findIntervals(events.tags, tags, 'contains');
+
+tags = {'respSize'};
+[events.respWin.sizeIntervals, events.respWin.sizeTags, ~] =...
+    findIntervals(events.tags, tags, 'contains');
+
+%% Generate trial struct
+trial = struct;
+for itrial = 1:numel(events.trial.sontimes) % completed trials...
+    trial(itrial).onTime = events.trial.sontimes(itrial);
+    trial(itrial).stimMoveTime = events.trial.movetimes(itrial) -  trial(itrial).onTime;
+    trial(itrial).stimOffTime = events.trial.sofftimes(itrial) - trial(itrial).onTime;
+    trial(itrial).velXL = params.velXLeft(itrial);
+    trial(itrial).velXR = params.velXRight(itrial);
+    trial(itrial).response = params.response(itrial);
+    trial(itrial).rewardtime = [];
+    
+    % get tria block type, response window properties from event intervals
+    trial(itrial).block = events.blocks.tags(events.trial.sonidx(itrial)>...
+        events.blocks.intervals(:,1) & events.trial.sonidx(itrial)<events.blocks.intervals(:,2));
+    trial(itrial).respSize = events.respWin.sizeTags(events.trial.sonidx(itrial)>...
+        events.respWin.sizeIntervals(:,1) & events.trial.sonidx(itrial)<events.respWin.sizeIntervals(:,2));
+    
+    trial(itrial).respWinOpen = [];
+    trial(itrial).respWinClosed = [];
+    if ~isequal(trial(itrial).block,'passive')
+        [~,~,~,trial(itrial).respWinOpen] = findNextEvent(events.trial.respOpentimes, trial(itrial).onTime);
+        [~,~,~,trial(itrial).respWinClosed] = findNextEvent(events.trial.respClosetimes, trial(itrial).onTime);
+        
+    end
+
+    % response == 1 i left, response == 2 is right
+    % find next non-manual reward after stimonset if trial was rewarded
+     if trial(itrial).response==1 %correct left
+         [~,~,~,trial(itrial).rewardtime] =...
+             findNextEvent(events.rewards.lrewardsTimes,trial(itrial).onTime);
+     end
+     if trial(itrial).response==2 %correct right
+         [~,~,~,trial(itrial).rewardtime] =...
+             findNextEvent(events.rewards.rrewardsTimes,trial(itrial).onTime);
+     end
+end
+
+
+%% trial-centric licking and running
+
 for itrial = 1:numel(events.sofftimes)
     % get time interval from ontime -1 to offtime + 2
     startTime = trial(itrial).onTime-1;
-    stopTime = trial(itrial).onTime+trial(itrial).stimOffTime+2; %2s after the stimulus is off...
+    stopTime = trial(itrial).onTime+trial(itrial).stimOffTime+5; %5s after the stimulus is off...
     trial(itrial).licksL = events.lickTimeL(events.lickTimeL < stopTime & events.lickTimeL > startTime)-trial(itrial).onTime;
     trial(itrial).licksR = events.lickTimeR(events.lickTimeR < stopTime & events.lickTimeR > startTime)-trial(itrial).onTime;
     
     [~, wheelStartIdx] = min(abs(startTime-wheel.eTime));
     [~, wheelStopIdx] = min(abs(stopTime-wheel.eTime));
-    trial(itrial).wheel = wheel.speed(wheelStartIdx:wheelStopIdx);
+    trial(itrial).wheel = wheel.smthSpeed(wheelStartIdx:wheelStopIdx);
     
 end
 
 
 %% When are mice licking?
 % need to define time periods of different epochs.
-respWindowLength = 2;
+respWindowLength = 4;
 
 epochs.stimOnNotMoving = [];
 epochs.stimOnMoving = [];
@@ -277,20 +240,23 @@ figure
 for itrial = 1:numel(trial)
 
 plot([-1 0 0 trial(itrial).stimOffTime trial(itrial).stimOffTime trial(itrial).stimOffTime+8],  [9 9 10 10 9 9], 'k-')
+title(trial(itrial).trialType)
 hold on
 if trial(itrial).velXR < trial(itrial).velXL
     linetag = 'r-';
 else linetag = 'b-';
 end
 plot([-1 trial(itrial).stimMoveTime trial(itrial).stimMoveTime trial(itrial).stimOffTime trial(itrial).stimOffTime trial(itrial).stimOffTime+8],  [8 8 8.9 8.9 8 8], linetag)
-
-if contains(trial(itrial).rewardTag, 'l')
-    linetag = 'b--';
-elseif contains(trial(itrial).rewardTag, 'r')
-    linetag = 'r--';
+try
+    if contains(trial(itrial).rewardTag, 'l')
+        linetag = 'b--';
+    elseif contains(trial(itrial).rewardTag, 'r')
+        linetag = 'r--';
+    end
+    plot([-1 trial(itrial).rewardTime, trial(itrial).rewardTime, trial(itrial).rewardTime+0.1 trial(itrial).rewardTime+0.1 trial(itrial).stimOffTime+8],...
+        [7 7 7.9 7.9 7 7],linetag)
+catch
 end
-plot([-1 trial(itrial).rewardTime, trial(itrial).rewardTime, trial(itrial).rewardTime+0.1 trial(itrial).rewardTime+0.1 trial(itrial).stimOffTime+8],...
-    [7 7 7.9 7.9 7 7],linetag)
 
 plot(trial(itrial).licksL, 6.5*ones(size(trial(itrial).licksL)), 'b*')
 plot(trial(itrial).licksR, 6*ones(size(trial(itrial).licksR)), 'r*')
