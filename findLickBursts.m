@@ -17,7 +17,8 @@ for i = 2:numel(splits)
 end
 t1(i+1).b = times(splits(end):numel(test1));
 
-idxempties = []; % find any bursts that are empty or have just 1 lick.
+idxempties = []; % find any bursts that are empty or have just 1 lick
+% relabel as single licks, not bursts
 for  i = 1:numel(t1)
     if isempty(t1(i).b) || numel(t1(i).b)<2
         idxempties = [idxempties i];
