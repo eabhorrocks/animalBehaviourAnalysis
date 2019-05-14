@@ -1,4 +1,4 @@
-function [metrics, trial] = getSessionMetrics(trial, blockTags, plotflag)
+function [metrics, trial] = getSessionMetrics(trial, blockTags, plotflag, saveflag)
 
 
 %% session metrics.
@@ -195,20 +195,25 @@ nTrialVals = [];
 pEngagedVals = [];
 pCorrectVals = [];
 pCorrect2Vals = [];
+nEngagedVals = [];
 
 for iblock = 1:numel(blockTags)
     nTrialVals = [nTrialVals, metrics.(blockTags{iblock}).nTrials];
+    nEngagedVals = [nEngagedVals, metrics.(blockTags{iblock}).nEngaged];
     pEngagedVals = [pEngagedVals, metrics.(blockTags{iblock}).pEngaged];
     pCorrectVals = [pCorrectVals, metrics.(blockTags{iblock}).pCorrect];
     pCorrect2Vals = [pCorrect2Vals, metrics.(blockTags{iblock}).pCorrect2];
 end
 
+notEngagedVals = nTrialVals - nEngagedVals;
+totalTrials = [nEngagedVals', notEngagedVals'];
 figure
 subplot(221)
-bar(labels, nTrialVals)
+bar(labels, totalTrials,'stacked')
 ylabel('nTrials')
 xlabel('block type')
 title('nTrials')
+legend({'engaged', 'not engaged'},'location','best')
 box off
 
 
@@ -231,6 +236,8 @@ box off
 ylim([0 1])
 yyaxis right
 plot(labels, [0.5 0.5 0.5 0.5], 'k--')
+ylim([0 1])
+yticks({})
 
 subplot(224)
 bar(labels, pCorrect2Vals)
@@ -239,5 +246,9 @@ xlabel('block type')
 title('Correct2 Trials (diff under diff condns)')
 box off
 ylim([0 1])
+
+if saveflag == 1
+saveas(gcf, 'metrics.bmp')
+end
 end
 

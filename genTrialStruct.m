@@ -6,9 +6,10 @@ for itrial = 1:numel(events.trial.sontimes) % completed trials...
     trial(itrial).onTime = events.trial.sontimes(itrial);
     trial(itrial).stimMoveTime = events.trial.movetimes(itrial) -  trial(itrial).onTime;
     trial(itrial).stimOffTime = events.trial.sofftimes(itrial) - trial(itrial).onTime;
-    trial(itrial).velXL = params.velXLeft(itrial);
-    trial(itrial).velXR = params.velXRight(itrial);
-    trial(itrial).response = params.response(itrial);
+    [~, paramIdx] = findNextEvent(params.eTime, trial(itrial).onTime);
+    trial(itrial).velXL = params.velXLeft(paramIdx);
+    trial(itrial).velXR = params.velXRight(paramIdx);
+    trial(itrial).response = params.response(paramIdx);
     trial(itrial).rewardtime = [];
     
     % get tria block type, response window properties from event intervals
@@ -41,7 +42,7 @@ end
 
 for itrial = 1:numel(trial)
     startTime = trial(itrial).onTime-1;
-    stopTime = 1+trial(itrial).onTime+str2double(regexpi(trial(itrial).respSize, '(?<=respSize\s*)\d*', 'match')); % 1s after respWindow
+    stopTime = 7+trial(itrial).onTime+str2double(regexpi(trial(itrial).respSize, '(?<=respSize\s*)\d*', 'match')); % 1s after respWindow
     trial(itrial).licksL = licks.lickTimeL(licks.lickTimeL < stopTime & licks.lickTimeL > startTime)-trial(itrial).onTime;
     trial(itrial).licksR = licks.lickTimeR(licks.lickTimeR < stopTime & licks.lickTimeR > startTime)-trial(itrial).onTime;
     
@@ -54,12 +55,15 @@ mr = events.rewards.mrrewardsTimes;
 ml = events.rewards.mlrewardsTimes;
 mrews = sort([mr; ml]);
 for itrial = 1:numel(trial)
-    interval = [trial(itrial).onTime trial(itrial).onTime+trial(itrial).respWinClosed];
-    if any((mrews >= interval(1) & mrews < interval(2)))
+    [~,~,mRewAbsTime,mRewRelTime] = findNextEvent(mrews, trial(itrial).onTime);
+    if (mRewAbsTime < trial(itrial).onTime+trial(itrial).respWinClosed)
         trial(itrial).manualReward = 1;
+        trial(itrial).manualRewardTime = mRewRelTime;
     else
         trial(itrial).manualReward = 0;
+        trial(itrial).manualRewardTime = [];
     end
+    clear mRewAbsTime mRewRelTime
 end
 
 for itrial = 1:numel(trial)
@@ -81,7 +85,7 @@ for itrial = 1:numel(trial)
         if (trial(itrial).response ~=3 && trial(itrial).manualReward==0)
             trial(itrial).engaged = 1;
         elseif (any(alltriallicks > trial(itrial).respWinOpen &...
-                alltriallicks < trial(itrial).respWinClosed) && trial(itrial).manualReward==0)
+                alltriallicks < trial(itrial).respWinClosed)) && (trial(itrial).manualReward==0)
             trial(itrial).engaged = 1;
         else
             trial(itrial).engaged = 0;

@@ -1,267 +1,124 @@
 %% import different files from behaviour
+set(0,'DefaultFigureWindowStyle','docked')
+
 % events (trial event times)
 % trial Params (parameters of each trial)
 % wheel (wheel input)
 % Licks (lick inputs)
 
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19027\Training\20190508'
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19027\Training\20190514'
 
 [events, params, wheel, licks] = importSessionFiles(folder);
 % check for duplicate files, in which case create seperate folders?
-
+mkdir(C:\Users\edward.horrocks\Documents\GitHub\animalBehaviourAnalysis\FIGURES,  
 %% get wheel speed
 % wheel struct, smth window type, windowSize(bins)
 wheel = processWheel(wheel, 'gaussian', 10);
 
 %% Process events
-events.trial.sonidx = find(events.tags=="stimON");
-events.trial.moveidx = find(events.tags=="dotsMOVE");
-events.trial.soffidx = find(events.tags=="stimOFF");
-events.trial.respOpenidx = find(events.tags=="respOPEN");
-events.trial.respCloseidx = find(events.tags=="respCLOSED");
-% check for incomplete trials and delete tags from them
-if numel(events.trial.soffidx) < numel(events.trial.sonidx)
-    events.trial.sonidx = events.trial.sonidx(1:numel(events.trial.soffidx));
-    events.trial.moveidx = events.trial.moveidx(1:numel(events.trial.soffidx));
-    events.trial.soffidx = events.trial.soffidx(1:numel(events.trial.soffidx));
-end
-events.trial.sontimes = events.eTime(events.trial.sonidx); 
-events.trial.movetimes = events.eTime(events.trial.moveidx);
-events.trial.sofftimes = events.eTime(events.trial.soffidx);
-events.trial.respOpentimes = events.eTime(events.trial.respOpenidx);
-events.trial.respClosetimes = events.eTime(events.trial.respCloseidx);
-
-% get reward times using regexp, invariant to the valve opening times.
-events = getRewardTimes(events);
-
-
-leftidx = 1 + find(diff(licks.leftLicks)==1);
-rightidx = 1 + find(diff(licks.rightLicks)==1);
-events.lickTimeL =  licks.eTime(leftidx);
-events.lickTimeR =  licks.eTime(rightidx);
-
-
-
-% get event.tag indexes for trial type changes
 blockTags = {'passive', 'activeany', 'activenoabort', 'active'};
-[events.blocks.intervals, events.blocks.tags, events.blocks.starts] =...
-    findIntervals(events.tags, blockTags, 'matches');
-
-% get event.tag indexes for respDelay and respSize value changes
-% this version could do with some error checking with diff input args
-tags = {'respDelay'};
-[events.respWin.delayIntervals, events.respWin.delayTags, ~] =...
-    findIntervals(events.tags, tags, 'contains');
-
-tags = {'respSize'};
-[events.respWin.sizeIntervals, events.respWin.sizeTags, ~] =...
-    findIntervals(events.tags, tags, 'contains');
+[events, licks] = processEvents(events, licks, blockTags);
 
 %% Generate trial struct
-trial = struct;
-for itrial = 1:numel(events.trial.sontimes) % completed trials...
-    trial(itrial).onTime = events.trial.sontimes(itrial);
-    trial(itrial).stimMoveTime = events.trial.movetimes(itrial) -  trial(itrial).onTime;
-    trial(itrial).stimOffTime = events.trial.sofftimes(itrial) - trial(itrial).onTime;
-    trial(itrial).velXL = params.velXLeft(itrial);
-    trial(itrial).velXR = params.velXRight(itrial);
-    trial(itrial).response = params.response(itrial);
-    trial(itrial).rewardtime = [];
-    
-    % get tria block type, response window properties from event intervals
-    trial(itrial).block = events.blocks.tags(events.trial.sonidx(itrial)>...
-        events.blocks.intervals(:,1) & events.trial.sonidx(itrial)<events.blocks.intervals(:,2));
-    trial(itrial).respSize = events.respWin.sizeTags(events.trial.sonidx(itrial)>...
-        events.respWin.sizeIntervals(:,1) & events.trial.sonidx(itrial)<events.respWin.sizeIntervals(:,2));
-    
-    trial(itrial).respWinOpen = [];
-    trial(itrial).respWinClosed = [];
-    if ~isequal(trial(itrial).block,'passive')
-        [~,~,~,trial(itrial).respWinOpen] = findNextEvent(events.trial.respOpentimes, trial(itrial).onTime);
-        [~,~,~,trial(itrial).respWinClosed] = findNextEvent(events.trial.respClosetimes, trial(itrial).onTime);
-        
-    end
+trial = genTrialStruct(events, params, wheel, licks);
 
-    % response == 1 i left, response == 2 is right
-    % find next non-manual reward after stimonset if trial was rewarded
-     if trial(itrial).response==1 %correct left
-         [~,~,~,trial(itrial).rewardtime] =...
-             findNextEvent(events.rewards.lrewardsTimes,trial(itrial).onTime);
-     end
-     if trial(itrial).response==2 %correct right
-         [~,~,~,trial(itrial).rewardtime] =...
-             findNextEvent(events.rewards.rrewardsTimes,trial(itrial).onTime);
-     end
-end
+%% session metrics
+blockTags = {'passive', 'activeany', 'activenoabort', 'active'};
+[metrics,trial] = getSessionMetrics(trial, blockTags, 1); % plot flag
 
-
-%% trial-centric licking and running
-
-for itrial = 1:numel(events.sofftimes)
-    % get time interval from ontime -1 to offtime + 2
-    startTime = trial(itrial).onTime-1;
-    stopTime = trial(itrial).onTime+trial(itrial).stimOffTime+5; %5s after the stimulus is off...
-    trial(itrial).licksL = events.lickTimeL(events.lickTimeL < stopTime & events.lickTimeL > startTime)-trial(itrial).onTime;
-    trial(itrial).licksR = events.lickTimeR(events.lickTimeR < stopTime & events.lickTimeR > startTime)-trial(itrial).onTime;
-    
-    [~, wheelStartIdx] = min(abs(startTime-wheel.eTime));
-    [~, wheelStopIdx] = min(abs(stopTime-wheel.eTime));
-    trial(itrial).wheel = wheel.smthSpeed(wheelStartIdx:wheelStopIdx);
-    
-end
-
-
-%% When are mice licking?
-% need to define time periods of different epochs.
-respWindowLength = 4;
-
-epochs.stimOnNotMoving = [];
-epochs.stimOnMoving = [];
-epochs.respWindow = [];
-epochs.ISI = [];
-
-for itrial = 1:numel(events.sontimes)-1
-    epochs.stimOnNotMoving = [epochs.stimOnNotMoving; trial(itrial).onTime, events.movetimes(itrial)];
-    epochs.stimOnMoving = [epochs.stimOnMoving; events.movetimes(itrial), events.sofftimes(itrial)];
-    epochs.respWindow = [epochs.respWindow; events.sofftimes(itrial), events.sofftimes(itrial)+respWindowLength]; % not meaningful for passive?
-    epochs.ISI = [epochs.ISI; events.sofftimes(itrial)+2, trial(itrial+1).onTime];
-end
-
-% number of licks in:
-% stim on not moving
-
-licks = struct;
-B1 = epochs.stimOnNotMoving;
-B2 = epochs.stimOnMoving;
-B3 = epochs.respWindow;
-B4 = epochs.ISI;
-
-% left licks
-idx1 = false(size(events.lickTimeL));
-idx2 = false(size(events.lickTimeL));
-idx3 = false(size(events.lickTimeL));
-idx4 = false(size(events.lickTimeL));
-
-for ii = 1:length(events.lickTimeL)
-  idx1(ii) = any((events.lickTimeL(ii)>B1(:,1))&(events.lickTimeL(ii)<B1(:,2)));
-  idx2(ii) = any((events.lickTimeL(ii)>B2(:,1))&(events.lickTimeL(ii)<B2(:,2)));
-  idx3(ii) = any((events.lickTimeL(ii)>B3(:,1))&(events.lickTimeL(ii)<B3(:,2)));
-  idx4(ii) = any((events.lickTimeL(ii)>B4(:,1))&(events.lickTimeL(ii)<B4(:,2)));
-end
-
-licks.totals.stimOnNotMoving(1) = sum(idx1);
-licks.totals.stimOnMoving(1) = sum(idx2);
-licks.totals.respWindow(1) = sum(idx3);
-licks.totals.ISI(1) = sum(idx4);
-
-clear idx1 idx2 idx3 idx4
-
-% right licks
-
-% left licks
-idx1 = false(size(events.lickTimeR));
-idx2 = false(size(events.lickTimeR));
-idx3 = false(size(events.lickTimeR));
-idx4 = false(size(events.lickTimeR));
-
-for ii = 1:length(events.lickTimeR)
-  idx1(ii) = any((events.lickTimeR(ii)>B1(:,1))&(events.lickTimeR(ii)<B1(:,2)));
-  idx2(ii) = any((events.lickTimeR(ii)>B2(:,1))&(events.lickTimeR(ii)<B2(:,2)));
-  idx3(ii) = any((events.lickTimeR(ii)>B3(:,1))&(events.lickTimeR(ii)<B3(:,2)));
-  idx4(ii) = any((events.lickTimeR(ii)>B4(:,1))&(events.lickTimeR(ii)<B4(:,2)));
-end
-
-licks.totals.stimOnNotMoving(2) = sum(idx1);
-licks.totals.stimOnMoving(2) = sum(idx2);
-licks.totals.respWindow(2) = sum(idx3);
-licks.totals.ISI(2) = sum(idx4);
-
-clear idx1 idx2 idx3 idx4
-
-% lick frequency (#licks/time in epoch)
-
-licks.freqs.stimOnNotMoving = sum(licks.totals.stimOnNotMoving)/sum(B1(:,2)-B1(:,1));
-licks.freqs.stimOnMoving = sum(licks.totals.stimOnMoving)/sum(B2(:,2)-B2(:,1));
-licks.freqs.respWindow = sum(licks.totals.respWindow)/sum(B3(:,2)-B3(:,1));
-licks.freqs.ISI = sum(licks.totals.ISI)/sum(B4(:,2)-B4(:,1));
-
-figure
-hb = bar([licks.freqs.stimOnNotMoving, licks.freqs.stimOnMoving, licks.freqs.respWindow, licks.freqs.ISI], 'FaceColor','flat')
-ylabel('mean lick frequency (Hz)')
-a = gca
-a.XTickLabel = [{'stat stim'}, {'moving stim'}, {'resp window'}, {'ISI'}];
-hb.CData = [.8 .8 .8; .6 .6 .6; .4 .4 .4; .2 .2 .2]
-box off
-%a.XTickLabelRotation = 45
-% want to check -> pre-emptive licks correct or not?
-
-%% plot all trials in one figure
-
-lefttrials = []; righttrials =[];
-for itrial = 1:numel(trial)
-    if trial(itrial).velXL < trial(itrial).velXR
-        lefttrials = [lefttrials; itrial];
-    else
-        righttrials = [righttrials; itrial];
+%% plot blocks trial-centric
+for i = 1:numel(blockTags)
+    plotTrials.(blockTags{i}) = trial(metrics.blockidx.(blockTags{i}));
+    if ~isempty(plotTrials.(blockTags{i}))
+        plotSDTrialBlock(plotTrials.(blockTags{i}), blockTags{i});
     end
 end
 
-trialCounter = 0;
-figure, hold on,
-for ileft = 1:numel(lefttrials)
-    trialCounter = trialCounter + 1;
-    p = plot(trial(lefttrials(ileft)).licksL, repelem(trialCounter, 1, numel(trial(lefttrials(ileft)).licksL)), 'b*');
-    p2= plot(trial(lefttrials(ileft)).licksR, repelem(trialCounter, 1, numel(trial(lefttrials(ileft)).licksR)), 'r*');
-end
-plot(-1:4, repelem(trialCounter + 0.5, 6, 1), 'k--')
-
-for iright = 1:numel(righttrials)
-    trialCounter = trialCounter + 1;
-    plot(trial(righttrials(iright)).licksL, repelem(trialCounter, 1, numel(trial(righttrials(iright)).licksL)), 'b*')
-    plot(trial(righttrials(iright)).licksR, repelem(trialCounter, 1, numel(trial(righttrials(iright)).licksR)), 'r*')
-end
-
-plot([-1 0 0 2 2 3 4],  [trialCounter+12 trialCounter+12 trialCounter+22 trialCounter+22 trialCounter+12 trialCounter+12 trialCounter+12], 'k-', 'LineWidth', 3)
-plot([-1 1 1 2 2 3 4], [trialCounter+1 trialCounter+1 trialCounter+11 trialCounter+11 trialCounter+1 trialCounter+1 trialCounter+1], 'k--', 'LineWidth', 3)
-plot([0 0], [0 trialCounter+12], 'k-.')
-plot([1 1], [0 trialCounter+12], 'k-.')
-plot([2 2], [0 trialCounter+12], 'k-.')
-
-xlabel('trial time (s)'); xlim([-1 4])
-ylabel('<--Right Trials      Left Trials-->', 'FontSize', 18);
-a = gca;
-a.YTick = []
+%% session as time series
+scrollPlotHandle = plotSessionAsSeries(events, params, trial, wheel, licks);
 
 
-
-% plot individual trials
-
-figure
-for itrial = 1:numel(trial)
-
-plot([-1 0 0 trial(itrial).stimOffTime trial(itrial).stimOffTime trial(itrial).stimOffTime+8],  [9 9 10 10 9 9], 'k-')
-title(trial(itrial).trialType)
-hold on
-if trial(itrial).velXR < trial(itrial).velXL
-    linetag = 'r-';
-else linetag = 'b-';
-end
-plot([-1 trial(itrial).stimMoveTime trial(itrial).stimMoveTime trial(itrial).stimOffTime trial(itrial).stimOffTime trial(itrial).stimOffTime+8],  [8 8 8.9 8.9 8 8], linetag)
-try
-    if contains(trial(itrial).rewardTag, 'l')
-        linetag = 'b--';
-    elseif contains(trial(itrial).rewardTag, 'r')
-        linetag = 'r--';
-    end
-    plot([-1 trial(itrial).rewardTime, trial(itrial).rewardTime, trial(itrial).rewardTime+0.1 trial(itrial).rewardTime+0.1 trial(itrial).stimOffTime+8],...
-        [7 7 7.9 7.9 7 7],linetag)
-catch
-end
-
-plot(trial(itrial).licksL, 6.5*ones(size(trial(itrial).licksL)), 'b*')
-plot(trial(itrial).licksR, 6*ones(size(trial(itrial).licksR)), 'r*')
-ylim([5.5 10.5])
-xlim([-1 8])
-hold off
-pause
-end
+% %% When are mice licking?
+% % need to define time periods of different epochs.
+% respWindowLength = 4;
+% 
+% epochs.stimOnNotMoving = [];
+% epochs.stimOnMoving = [];
+% epochs.respWindow = [];
+% epochs.ISI = [];
+% 
+% for itrial = 1:numel(events.sontimes)-1
+%     epochs.stimOnNotMoving = [epochs.stimOnNotMoving; trial(itrial).onTime, events.movetimes(itrial)];
+%     epochs.stimOnMoving = [epochs.stimOnMoving; events.movetimes(itrial), events.sofftimes(itrial)];
+%     epochs.respWindow = [epochs.respWindow; events.sofftimes(itrial), events.sofftimes(itrial)+respWindowLength]; % not meaningful for passive?
+%     epochs.ISI = [epochs.ISI; events.sofftimes(itrial)+2, trial(itrial+1).onTime];
+% end
+% 
+% % number of licks in:
+% % stim on not moving
+% 
+% licks = struct;
+% B1 = epochs.stimOnNotMoving;
+% B2 = epochs.stimOnMoving;
+% B3 = epochs.respWindow;
+% B4 = epochs.ISI;
+% 
+% % left licks
+% idx1 = false(size(events.lickTimeL));
+% idx2 = false(size(events.lickTimeL));
+% idx3 = false(size(events.lickTimeL));
+% idx4 = false(size(events.lickTimeL));
+% 
+% for ii = 1:length(events.lickTimeL)
+%     idx1(ii) = any((events.lickTimeL(ii)>B1(:,1))&(events.lickTimeL(ii)<B1(:,2)));
+%     idx2(ii) = any((events.lickTimeL(ii)>B2(:,1))&(events.lickTimeL(ii)<B2(:,2)));
+%     idx3(ii) = any((events.lickTimeL(ii)>B3(:,1))&(events.lickTimeL(ii)<B3(:,2)));
+%     idx4(ii) = any((events.lickTimeL(ii)>B4(:,1))&(events.lickTimeL(ii)<B4(:,2)));
+% end
+% 
+% licks.totals.stimOnNotMoving(1) = sum(idx1);
+% licks.totals.stimOnMoving(1) = sum(idx2);
+% licks.totals.respWindow(1) = sum(idx3);
+% licks.totals.ISI(1) = sum(idx4);
+% 
+% clear idx1 idx2 idx3 idx4
+% 
+% % right licks
+% 
+% % left licks
+% idx1 = false(size(events.lickTimeR));
+% idx2 = false(size(events.lickTimeR));
+% idx3 = false(size(events.lickTimeR));
+% idx4 = false(size(events.lickTimeR));
+% 
+% for ii = 1:length(events.lickTimeR)
+%     idx1(ii) = any((events.lickTimeR(ii)>B1(:,1))&(events.lickTimeR(ii)<B1(:,2)));
+%     idx2(ii) = any((events.lickTimeR(ii)>B2(:,1))&(events.lickTimeR(ii)<B2(:,2)));
+%     idx3(ii) = any((events.lickTimeR(ii)>B3(:,1))&(events.lickTimeR(ii)<B3(:,2)));
+%     idx4(ii) = any((events.lickTimeR(ii)>B4(:,1))&(events.lickTimeR(ii)<B4(:,2)));
+% end
+% 
+% licks.totals.stimOnNotMoving(2) = sum(idx1);
+% licks.totals.stimOnMoving(2) = sum(idx2);
+% licks.totals.respWindow(2) = sum(idx3);
+% licks.totals.ISI(2) = sum(idx4);
+% 
+% clear idx1 idx2 idx3 idx4
+% 
+% % lick frequency (#licks/time in epoch)
+% 
+% licks.freqs.stimOnNotMoving = sum(licks.totals.stimOnNotMoving)/sum(B1(:,2)-B1(:,1));
+% licks.freqs.stimOnMoving = sum(licks.totals.stimOnMoving)/sum(B2(:,2)-B2(:,1));
+% licks.freqs.respWindow = sum(licks.totals.respWindow)/sum(B3(:,2)-B3(:,1));
+% licks.freqs.ISI = sum(licks.totals.ISI)/sum(B4(:,2)-B4(:,1));
+% 
+% figure
+% hb = bar([licks.freqs.stimOnNotMoving, licks.freqs.stimOnMoving, licks.freqs.respWindow, licks.freqs.ISI], 'FaceColor','flat')
+% ylabel('mean lick frequency (Hz)')
+% a = gca
+% a.XTickLabel = [{'stat stim'}, {'moving stim'}, {'resp window'}, {'ISI'}];
+% hb.CData = [.8 .8 .8; .6 .6 .6; .4 .4 .4; .2 .2 .2]
+% box off
+% %a.XTickLabelRotation = 45
+% % want to check -> pre-emptive licks correct or not?
+% 
