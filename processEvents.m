@@ -3,7 +3,7 @@ function [events, licks] = processEvents(events, licks, blockTags)
 % deal with weird bonsai issue where stimON might be logged but trial not
 % complete
 todel = [];
-for i=1:numel(events.tags)
+for i=1:numel(events.tags)-1
     if strcmp(events.tags(i), "stimON")
         if any(strcmp(events.tags(i+1), blockTags))
             todel = [todel, i];

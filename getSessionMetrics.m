@@ -153,6 +153,28 @@ for ibtype = 1:numel(blockTags)
                 % correct or not. licked correct side after incorrect side.
             end
             
+        case 'activevary'
+            for itrial = 1:numel(idx)
+                if (trial(idx(itrial)).response == 1 || trial(idx(itrial)).response == 2)
+                    trial(idx(itrial)).correct = 1;
+                else trial(idx(itrial)).correct2 = 0;
+                end
+                if (trial(idx(itrial)).response == 0)
+                    validL = find(trial(idx(itrial)).licksL > trial(idx(itrial)).respWinOpen...
+                        & trial(idx(itrial)).licksL < trial(idx(itrial)).respWinClosed);
+                    validR = find(trial(idx(itrial)).licksR > trial(idx(itrial)).respWinOpen...
+                        & trial(idx(itrial)).licksR < trial(idx(itrial)).respWinClosed);
+                    if (~isempty(validL) && ~isempty(validR))
+                        trial(idx(itrial)).correct2 = 1;
+                    else trial(idx(itrial)).correct2 = 0;
+                    end
+                end
+                
+                
+                % correct or not. licked correct side after incorrect side.
+            end
+            
+            
             % number of trials correct trials out of those engaged
             % for activeany, its if first lick was on right side
             % for activenoabort, first lick on right side OR 2ndry if response ~=3
@@ -235,7 +257,7 @@ title('Full correct Trials (as proportion of engaged)')
 box off
 ylim([0 1])
 yyaxis right
-plot(labels, [0.5 0.5 0.5 0.5], 'k--')
+plot(labels, 0.5*ones(size(labels)), 'k--')
 ylim([0 1])
 yticks({})
 
