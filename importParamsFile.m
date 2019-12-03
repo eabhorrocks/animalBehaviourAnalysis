@@ -1,4 +1,4 @@
-function [trialID,trialDuration,dotSize,dotCol1,dotCol2,numDots1,numDots2,dotLifeBool,dotLifetime,contrast1,velXLeft,velYLeft,cohLeft,velXRight,velYRight,cohRight,response,paramTimes] = importParamsFile(filename, startRow, endRow)
+function [trialID,trialDuration,dotSize,dotCol1,dotCol2,numDots1,numDots2,dotLifeBool,dotLifetime,contrast1,velXLeft,velYLeft,cohLeft,velXRight,velYRight,cohRight,response, paramTimes] = importParamsFile(filename, startRow, endRow)
 %IMPORTFILE Import numeric data from a text file as column vectors.
 %   [TRIALID,TRIALDURATION,DOTSIZE,DOTCOL1,DOTCOL2,NUMDOTS1,NUMDOTS2,DOTLIFEBOOL,DOTLIFETIME,CONTRAST1,VELXLEFT,VELYLEFT,COHLEFT,VELXRIGHT,VELYRIGHT,COHRIGHT,RESPONSE,PARAMTIMES]
 %   = IMPORTFILE(FILENAME) Reads data from text file FILENAME for the
@@ -53,7 +53,7 @@ for col=1:length(dataArray)-1
 end
 numericData = NaN(size(dataArray{1},1),size(dataArray,2));
 
-for col=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+for col=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
     % Converts text in the input cell array to numbers. Replaced non-numeric
     % text with NaN.
     rawData = dataArray{col};
@@ -93,10 +93,10 @@ try
 catch
     try
         % Handle dates surrounded by quotes
-        dataArray{18} = cellfun(@(x) x(2:end-1), dataArray{18}, 'UniformOutput', false);
+        dataArray{9} = cellfun(@(x) x(2:end-1), dataArray{18}, 'UniformOutput', false);
         dates{18} = datetime(dataArray{18}, 'Format', 'HH:mm:ss.SSSSSSS', 'InputFormat', 'HH:mm:ss.SSSSSSS');
     catch
-        dates{18} = repmat(datetime([NaN NaN NaN]), size(dataArray{18}));
+        dates{18} = repmat(datetime([NaN NaN NaN]), size(dataArray{19}));
     end
 end
 

@@ -4,7 +4,7 @@
 % wheel (wheel input)
 % Licks (lick inputs)
 
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19027\Training\300419'
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19027\Training\20190606'
 
 [events, params, wheel, licks] = importSessionFiles(folder);
 

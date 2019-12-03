@@ -69,7 +69,6 @@ plot([wheel.eTime(1), wheel.eTime(end)], [8 8], 'k-')
 
 whlmaxstr = num2str(round(max(wheel.smthSpeed)))
 whlmaxstr = [whlmaxstr, 'cm/s']
-
 a = gca; 
 a.YTick = [6, 7, 8, 8.65, 9.5]
 a.YTickLabels = {'0 cm/s', 'Wheel Speed', whlmaxstr, 'Licks', 'Stimulus'}

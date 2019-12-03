@@ -153,7 +153,7 @@ for ibtype = 1:numel(blockTags)
                 % correct or not. licked correct side after incorrect side.
             end
             
-        case 'activevary'
+        case {'activevary', 'activevaryL','activehard'}
             for itrial = 1:numel(idx)
                 if (trial(idx(itrial)).response == 1 || trial(idx(itrial)).response == 2)
                     trial(idx(itrial)).correct = 1;

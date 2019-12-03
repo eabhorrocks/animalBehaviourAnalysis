@@ -1,4 +1,4 @@
-function [wheel] = processWheel(wheel,smoothMethod,windowSize)
+function wheel = processWheel(wheel,smoothMethod,windowSize)
 
 idx = find(isnan(wheel.eTime));
 

@@ -1,7 +1,12 @@
 %% set folder and tags of blocks
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19028\Training\20190529'
+format compact
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining\191115'
+
 saveflag = 0;
-blockTags = {'passive', 'activeany', 'activenoabort', 'active', 'activevary','activevaryL'};
+bonsai_with_responses = 1; % for new version which saves the response and outcome of the trial..
+blockTags = {'activeany', 'activenoabort'};
+
+%blockTags = {'passive', 'activeany', 'activenoabort', 'active', 'activevary','activevaryL','activehard'};
 
 splitfold = split(folder, '\');
 subj = splitfold{5};
@@ -16,11 +21,12 @@ set(0,'DefaultFigureWindowStyle','docked')
 
 %% import csv files
 
-[events, params, wheel, licks] = importSessionFiles(folder);
+[events, params, wheel, licks] = importSessionFiles(folder, bonsai_with_responses);
 % check for duplicate files, in which case create seperate folders?
 % auto-catenate files would be nice.
 %% get wheel speed
 % wheel struct, smth window type, windowSize(bins)
+
 wheel = processWheel(wheel, 'gaussian', 10);
 
 %% Process events
@@ -30,7 +36,6 @@ wheel = processWheel(wheel, 'gaussian', 10);
 trial = genTrialStruct(events, params, wheel, licks);
 
 %% session metrics
-blockTags = {'passive', 'activeany', 'activenoabort', 'active','activevary', 'activevaryL'};
 [metrics,trial] = getSessionMetrics(trial, blockTags, 1, saveflag); % plot flag, save flag
 
 %% plot blocks trial-centric
@@ -45,76 +50,55 @@ end
 plotSDActiveTrials(trial, [subj ' ' seshDate], saveflag)
 
 %% session as time series
-scrollPlotHandle = plotSessionAsSeriesLABMEETING(events, params, trial, wheel, licks, 1); % saveflag
+scrollPlotHandle = plotSessionAsSeries(events, params, trial, wheel, licks, 1); % saveflag
 
 
-%%
-%% plot psychometric curves
 
-activeTrialIndexes = sort([metrics.blockidx.activevary, metrics.blockidx.active, metrics.blockidx.activevaryL]);
-allActiveTrials = trial(activeTrialIndexes);
+%% GLM
+% binofit to get CIs for simulated responses to stimuli.
+[b, dev, stats, modelPerf, absSD, ten, ten2, resVec, yfit, yfit2] = SDGLM(trial);
 
-validRes = [0 1 2];
-idx = ismember([allActiveTrials.response], validRes);
-validTrials = allActiveTrials(idx);
+%% plot psychometric curve
+plotSDpsych(trial, metrics)
 
-ptrials = struct();
 
-for i = 1:numel(validTrials)
-    ptrials(i).delv = abs(validTrials(i).velXR)-abs(validTrials(i).velXL);
-    ptrials(i).response = validTrials(i).response;
-    if (ptrials(i).response == 2) || (ptrials(i).delv < 0 && ptrials(i).response==0)
-        ptrials(i).rresp = 1;
-    else
-        ptrials(i).rresp = 0;
-    end
-end
+%% psytrack prep data
+% bias
+% stim left (array, [prev values as well)
+% stim right
+% speed difference
+% average speed? (on last trial?)  prior stim history...
+% previous correct answer
+% previous choice
 
-pt = struct();
+% get rid of invalid trials!
 
-speedDiffs = unique([ptrials.delv]);
-for i = 1:numel(speedDiffs)
-    pt(i).sd = speedDiffs(i);
-    pt(i).trials = ptrials([ptrials.delv]==speedDiffs(i));
-    pt(i).nTrials = numel(pt(i).trials);
-    pt(i).nR = sum([pt(i).trials.rresp]);
-    pt(i).propR = pt(i).nR/pt(i).nTrials;
-end
-propR = [pt.propR];
-speedDiffs = speedDiffs;
+[y, s1, s2, prevAns, prevChoice, correctVec, answerVec] = makePsytrackInputs(trial);
 
-% figure, hold on
-% for i = 1:numel(speedDiffs)
-% plot(speedDiffs(i), propR(i), 'bo', 'MarkerSize', pt(i).nTrials, 'MarkerFacecolor', 'b')
-% end
-figure
- %First we need the data in the format (x | nCorrect | total)
-pSMatrix = [speedDiffs', [pt.nR]', [pt.nTrials]'];
+inputFile = [newDir, '\' dirName 'psyinputs.mat'];
+outputFile = [newDir, '\' dirName 'psyoutput.mat'];
+save(inputFile,...
+    'y', 's1', 's2', 'prevAns', 'prevChoice', 'answerVec', 'correctVec');
 
-options             = struct;   % initialize as an empty struct
-options.sigmoidName = 'logistic'; %'rgumbel'   % choose a cumulative Gaussian as the sigmoid
-options.expType     = 'YesNo';
-psResult = psignifit(pSMatrix,options);
+sysCommand = ['C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\Scripts\python.exe C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\runPsyTrackSingleSesh.py -i ',...
+   inputFile ' -o ' outputFile];
 
-plotOptions.dataColor      = [0,105/255,170/255];  % color of the data
-plotOptions.plotData       = 1;                    % plot the data?
-plotOptions.lineColor      = [0,0,0];              % color of the PF
-plotOptions.lineWidth      = 2;                    % lineWidth of the PF
-plotOptions.xLabel         = 'Speed Difference of Right Dots vs Left Dots';     % xLabel
-plotOptions.yLabel         = 'Proportion Right Response';    % yLabel
-%plotOptions.labelSize      = 15;                   % font size labels
-%plotOptions.fontSize       = 10;                   % font size numbers
-%plotOptions.fontName       = 'Helvetica';          % font
-%plotOptions.tufteAxis      = false;                % use special axis
-%plotOptions.plotAsymptote  = true;                 % plot Asympotes 
-%plotOptions.plotThresh     = true;                 % plot Threshold Mark
-%plotOptions.aspectRatio    = false;                % set aspect ratio
-%plotOptions.extrapolLength = .2;                   % extrapolation percentage
-%plotOptions.CIthresh       = false;                % draw CI on threhold
-%plotOptions.dataSize       = 10000./sum(result.data(:,3)) % size of the data-dots
-plotPsych(psResult, plotOptions);
-box off
-grid on
+% sysCommand = ['C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\Scripts\python.exe C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\runPsyTrackSingleSeshSimple.py -i ',...
+%     inputFile ' -o ' outputFile];
+
+system(sysCommand)
+
+load(outputFile)
+hold off, figure, hold on
+shadedErrorBar(1:numel(biasw),biasw, biasint./2, 'lineProps', 'k')
+shadedErrorBar(1:numel(biasw),s1w, s1int./2, 'lineProps', 'b')
+shadedErrorBar(1:numel(biasw),s2w, s2int./2, 'lineProps', 'r')
+shadedErrorBar(1:numel(biasw),pansw, pansint./2, 'lineProps', 'm')
+shadedErrorBar(1:numel(biasw),pchoicew, pchoiceint./2, 'lineProps', 'c')
+
+legend({'bias', 'left vel', 'right vel', 'prev ans', 'prev choice'})
+ylabel('Weights');
+xlabel('Trial number')
 
 %% dev catenate
 % 

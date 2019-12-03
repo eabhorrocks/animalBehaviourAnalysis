@@ -73,10 +73,11 @@ plot([3.5 3.5], [0 trialCounter+10], 'k-.')
 
 
 %% binned lick freq
-edges = [-1:0.5:9];
+edges = [-1:0.5:15];
 licksVector = zeros(1,numel(edges));
 for itrial = 1:numel(plotTrials)
-%     itrial
+%     itrialitrial
+
     Llicksdisc = discretize(plotTrials(itrial).licksL, edges);
     Rlicksdisc = discretize(plotTrials(itrial).licksR, edges);
     if ~isempty(Llicksdisc)
@@ -93,7 +94,7 @@ for itrial = 1:numel(plotTrials)
 end
 maxlickfreq = 2*(max(licksVector)./numel(plotTrials))
 licksVector = (licksVector/max(licksVector))*50;
-plot(-1:0.5:9, licksVector-50, 'k-', 'LineWidth', 2)
+plot(-1:0.5:9, licksVector(1:numel(-1:0.5:9))-50, 'k-', 'LineWidth', 2)
 yticks = [-25, -1, yticks];
 
 

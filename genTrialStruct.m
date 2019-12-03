@@ -7,41 +7,42 @@ for itrial = 1:numel(events.trial.sontimes) % completed trials...
     trial(itrial).stimMoveTime = events.trial.movetimes(itrial) -  trial(itrial).onTime;
     trial(itrial).stimOffTime = events.trial.sofftimes(itrial) - trial(itrial).onTime;
     [~, paramIdx] = findNextEvent(params.eTime, trial(itrial).onTime);
-    trial(itrial).velXL = params.velXLeft(paramIdx);
-    trial(itrial).velXR = params.velXRight(paramIdx);
-    trial(itrial).SD = abs(trial(itrial).velXR) - abs(trial(itrial).velXL);
-    trial(itrial).response = params.response(paramIdx);
+    trial(itrial).type = params.TrialType(paramIdx);
+    trial(itrial).velXL = params.VelXLeft(paramIdx);
+    trial(itrial).velXR = params.VelXRight(paramIdx);
+    trial(itrial).geoMean = round(sqrt(trial(itrial).velXL * trial(itrial).velXR),0);
+    trial(itrial).geoRatio = round(trial(itrial).velXR / trial(itrial).velXL, 2);
+    trial(itrial).absSD = abs(trial(itrial).velXR) - abs(trial(itrial).velXL);
+    trial(itrial).response = params.Response(paramIdx);
+    trial(itrial).result = params.Result(paramIdx);
     trial(itrial).rewardtime = [];
     
-    % get tria block type, response window properties from event intervals
+    % get trial block type, response window properties from event intervals
     
-    trial(itrial).block = events.blocks.tags(events.trial.sonidx(itrial)>...
-        events.blocks.intervals(:,1) & events.trial.sonidx(itrial)<events.blocks.intervals(:,2));
+%     trial(itrial).block = events.blocks.tags(events.trial.sonidx(itrial)>...
+%         events.blocks.intervals(:,1) & events.trial.sonidx(itrial)<events.blocks.intervals(:,2));
     trial(itrial).respSize = events.respWin.sizeTags(events.trial.sonidx(itrial)>...
         events.respWin.sizeIntervals(:,1) & events.trial.sonidx(itrial)<events.respWin.sizeIntervals(:,2));
     
     trial(itrial).respWinOpen = [];
     trial(itrial).respWinClosed = [];
-    if ~isequal(trial(itrial).block,'passive')
+    if ~isequal(trial(itrial).type,'passive')
         [~,~,~,trial(itrial).respWinOpen] = findNextEvent(events.trial.respOpentimes, trial(itrial).onTime);
         [~,~,~,trial(itrial).respWinClosed] = findNextEvent(events.trial.respClosetimes, trial(itrial).onTime);
-        
+    else % if passive, add manual response window 
+        trial(itrial).respWinOpen = trial(itrial).stimMoveTime;
+        trial(itrial).respWinClosed = trial(itrial).stimOffTime + 3;
     end
     
     % response == 1 i left, response == 2 is right
     % find next non-manual reward after stimonset if trial was rewarded
-    if trial(itrial).response==1 %correct left
+    if trial(itrial).result==1 %correct left
         [~,~,~,trial(itrial).rewardtime] =...
             findNextEvent(events.rewards.lrewardsTimes,trial(itrial).onTime);
     end
-    if trial(itrial).response==2 %correct right
+    if trial(itrial).result==2 %correct right
         [~,~,~,trial(itrial).rewardtime] =...
             findNextEvent(events.rewards.rrewardsTimes,trial(itrial).onTime);
-    end
-    
-    switch trial(itrial).block
-        case {'active', 'activevary', 'activevaryL'}
-            trial(itrial).block2 = 1;
     end
 end
 
@@ -59,17 +60,16 @@ for itrial = 1:numel(trial)
 end
 
 
-
-
 mr = events.rewards.mrrewardsTimes;
 ml = events.rewards.mlrewardsTimes;
 mrews = sort([mr; ml]);
 for itrial = 1:numel(trial)
     [~,~,mRewAbsTime,mRewRelTime] = findNextEvent(mrews, trial(itrial).onTime);
-    if (mRewAbsTime < trial(itrial).onTime+trial(itrial).respWinClosed) && ... 
+    if (mRewAbsTime < trial(itrial).onTime+trial(itrial).respWinClosed) & ... 
             (mRewRelTime > -2)
         trial(itrial).manualReward = 1;
         trial(itrial).manualRewardTime = mRewRelTime;
+        trial(itrial).type = 'passive';
         %trial(itrial).block = 'passive';
     else
         trial(itrial).manualReward = 0;
@@ -81,7 +81,7 @@ end
 for itrial = 1:numel(trial)
     alltriallicks = sort([trial(itrial).licksL; trial(itrial).licksR]);
     % passive trials
-    if isequal(trial(itrial).block, "passive")
+    if isequal(trial(itrial).type, "passive")
         if any(alltriallicks > trial(itrial).respWinOpen &...
                 alltriallicks < trial(itrial).rewardtime)
             trial(itrial).engaged = 1;
@@ -94,7 +94,7 @@ for itrial = 1:numel(trial)
         
         % not passive trials
     else
-        if (trial(itrial).response ~=3 && trial(itrial).manualReward==0)
+        if (trial(itrial).response ~=0 && trial(itrial).manualReward==0)
             trial(itrial).engaged = 1;
         elseif (any(alltriallicks > trial(itrial).respWinOpen &...
                 alltriallicks < trial(itrial).respWinClosed)) && (trial(itrial).manualReward==0)
