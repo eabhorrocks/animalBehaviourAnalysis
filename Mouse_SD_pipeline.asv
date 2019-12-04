@@ -10,7 +10,7 @@ seshDate = splitfold{7};
 %% import csv files
 [eventsRaw, paramsRaw, wheelRaw, licksRaw, nSessions] = importSessionFilesConcat(folder);
 
-%% loop through sessions, generate trial struct
+%% loop through sessions
 
 for iSession = 1:nSessions
     
@@ -33,6 +33,7 @@ for iSession = 1:nSessions
     else
     trials = genTrialStruct(events(iSession), paramsRaw(iSession), wheel(iSession), licks(iSession));
     end
+    
     
 end
 

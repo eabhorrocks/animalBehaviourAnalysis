@@ -12,6 +12,7 @@ for itrial = 1:numel(events.trial.sontimes) % completed trials...
     trial(itrial).velXR = params.VelXRight(paramIdx);
     trial(itrial).geoMean = round(sqrt(trial(itrial).velXL * trial(itrial).velXR),0);
     trial(itrial).geoRatio = round(trial(itrial).velXR / trial(itrial).velXL, 2);
+    trial(itrial).absRatio = trial(itrial).geoRatio;
     trial(itrial).absSD = abs(trial(itrial).velXR) - abs(trial(itrial).velXL);
     trial(itrial).response = params.Response(paramIdx);
     trial(itrial).result = params.Result(paramIdx);
@@ -57,7 +58,35 @@ for itrial = 1:numel(trial)
     [~, wheelStartIdx] = min(abs(startTime-wheel.eTime));
     [~, wheelStopIdx] = min(abs(stopTime-wheel.eTime));
     trial(itrial).wheel = wheel.smthSpeed(wheelStartIdx:wheelStopIdx);
+    
+    allLicks = sort([trial(itrial).licksL; trial(itrial).licksR]);
+    [~, ~, ~, trial(itrial).RT] = findNextEvent(allLicks, trial(itrial).stimMoveTime);
 end
+
+%% get average run speed
+
+for itrial = 1:numel(trial)
+    startTime = trial(itrial).onTime + trial(itrial).stimMoveTime;
+    stopTime =  trial(itrial).stimOffTime;
+    if trial(itrial).rewardtime < stopTime
+        stopTime = trial(itrial).rewardtime;
+    end
+    stopTime = trial(itrial).onTime + stopTime;
+    [~, wheelStartIdx] = min(abs(startTime-wheel.eTime));
+    [~, wheelStopIdx] = min(abs(stopTime-wheel.eTime));
+    trial(itrial).movingStimWheel = wheel.smthSpeed(wheelStartIdx:wheelStopIdx);
+    trial(itrial).meanRunSpeed = nanmean(trial(itrial).movingStimWheel);
+    % classify trials as 'running', 'stationary' or mixed.
+    % change so that proportion of elements (e.g. 90%) are over threshold
+    if (all(trial(itrial).movingStimWheel > 3))
+        trial(itrial).runbool = 1;
+    elseif (all(trial(itrial).movingStimWheel < 5))
+        trial(itrial).runbool = 0;
+    else
+        trial(itrial).runbool = -1;
+    end
+end
+    
 
 
 mr = events.rewards.mrrewardsTimes;
