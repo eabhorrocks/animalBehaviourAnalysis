@@ -1,8 +1,7 @@
-function speed = plotPsychSDRatio(trials, options, options2)
+function speed = plotPsychSDRatio(validTrials, options, options2)
 
-activeTrials = trials(find([trials.type]=='activev2'));
-meanSpeeds = unique([trials.geoMean]);
-validTrials = activeTrials(find([activeTrials.engaged]==1));
+meanSpeeds = unique([validTrials.geoMean]);
+
 
 for ispeed = 1:numel(meanSpeeds)
     speed(ispeed).meanSpeed = meanSpeeds(ispeed);

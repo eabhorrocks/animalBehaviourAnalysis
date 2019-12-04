@@ -76,11 +76,20 @@ for itrial = 1:numel(trial)
     [~, wheelStopIdx] = min(abs(stopTime-wheel.eTime));
     trial(itrial).movingStimWheel = wheel.smthSpeed(wheelStartIdx:wheelStopIdx);
     trial(itrial).meanRunSpeed = nanmean(trial(itrial).movingStimWheel);
+    trial(itrial).varRunSpeed = nanvar(trial(itrial).movingStimWheel);
     % classify trials as 'running', 'stationary' or mixed.
     % change so that proportion of elements (e.g. 90%) are over threshold
-    if (all(trial(itrial).movingStimWheel > 3))
+%     if (all(trial(itrial).movingStimWheel > 3))
+%         trial(itrial).runbool = 1;
+%     elseif (all(trial(itrial).movingStimWheel < 5))
+%         trial(itrial).runbool = 0;
+%     else
+%         trial(itrial).runbool = -1;
+%     end
+
+    if sum(trial(itrial).movingStimWheel > 5) > 0.5*numel(trial(itrial).movingStimWheel)
         trial(itrial).runbool = 1;
-    elseif (all(trial(itrial).movingStimWheel < 5))
+    elseif sum(trial(itrial).movingStimWheel < 5) > 0.5*numel(trial(itrial).movingStimWheel)
         trial(itrial).runbool = 0;
     else
         trial(itrial).runbool = -1;

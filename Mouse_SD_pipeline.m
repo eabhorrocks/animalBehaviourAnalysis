@@ -2,10 +2,12 @@
 %set(0,'DefaultFigureWindowStyle','docked');
 
 
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19144\SDTraining\191203'
+%folder = 'X:\ibn-vision\DATA\SUBJECTS\M19144\SDTraining\191203'
+folder = 'X:\DATA\SUBJECTS\M19144\SDTraining\191203'
+
 splitfold = split(folder, '\');
-subj = splitfold{5};
-seshDate = splitfold{7};
+%subj = splitfold{5};
+%seshDate = splitfold{7};
 
 %% import csv files
 [eventsRaw, paramsRaw, wheelRaw, licksRaw, nSessions] = importSessionFilesConcat(folder);
@@ -36,6 +38,11 @@ for iSession = 1:nSessions
     
 end
 
+%%
+activeTrials = trials(find([trials.type]=='activev2'));
+meanSpeeds = unique([trials.geoMean]);
+validTrials = activeTrials(find([activeTrials.engaged]==1));
+
 %% plot psychometric curves for each speed
 
 % options for signed psychometric curves
@@ -52,13 +59,37 @@ options2.poolMaxGap = inf;
 options2.poolMaxLength = inf;
 options2.nblocks = 1;
 
-speed = plotPsychSDRatio(trials, options, options2);
+speed = plotPsychSDRatio(validTrials, options, options2);
+
+%% metrics
+
+% get diff trial types
+correctTrials = validTrials(find([validTrials.result] ~= 0));
+incorrectTrials = validTrials(find([validTrials.result] == 0));
+runningTrials = validTrials(find([validTrials.runbool]==1));
+mixedTrials = validTrials(find([validTrials.runbool]==-1));
+statTrials = validTrials(find([validTrials.runbool]==0));
+
+% running
+nRunning = numel(find([validTrials.runbool]==1))
+nStat = numel(find([validTrials.runbool]==0))
+nMixed = numel(find([validTrials.runbool]==-1))
+
+% 
+histogram([correctTrials.meanRunSpeed], 20, 'FaceAlpha', 0.5), hold on
+histogram([incorrectTrials.meanRunSpeed], 20, 'FaceAlpha', 0.5)
+title('mean run speed'), box off
+hold off
+
+histogram([correctTrials.varRunSpeed], 20, 'FaceAlpha', 0.5), hold on
+histogram([incorrectTrials.varRunSpeed], 20, 'FaceAlpha', 0.5)
+title('var run speed'), box off
+hold off
 
 
-
-
-
-%% plot unsigned psychometric curve
+%%
+speedrun = plotPsychSDRatio(runningTrials, options, options2);
+speedmixed = plotPsychSDRatio(statTrials, options, options2);
 
 
 
