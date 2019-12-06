@@ -1,8 +1,10 @@
 function speed = plotPsychSDRatio(validTrials, options, options2)
 
 meanSpeeds = unique([validTrials.geoMean]);
-
-
+    plotOptions.dataColor = [0 0 1];
+    plotOptions.lineColor = [0 0 1];
+figure,
+hold on
 for ispeed = 1:numel(meanSpeeds)
     speed(ispeed).meanSpeed = meanSpeeds(ispeed);
     speed(ispeed).ratios = [];
@@ -16,28 +18,30 @@ for ispeed = 1:numel(meanSpeeds)
             speed(ispeed).trials(find([speed(ispeed).trials.geoRatio]==speed(ispeed).ratios(iratio)));
         
         
-        speed(ispeed).psigMatrix(iratio,1) = (speed(ispeed).ratios(iratio));
-        if speed(ispeed).psigMatrix(iratio,1) < 1
-            speed(ispeed).psigMatrix(iratio,1) = -(1/speed(ispeed).psigMatrix(iratio,1));
-        end
+        speed(ispeed).psigMatrix(iratio,1) = log(speed(ispeed).ratios(iratio));
+%         if speed(ispeed).psigMatrix(iratio,1) < 1
+%             speed(ispeed).psigMatrix(iratio,1) = -(1/speed(ispeed).psigMatrix(iratio,1));
+%         end
        
         speed(ispeed).psigMatrix(iratio,2) = numel(find([speed(ispeed).ratTrials(iratio).trials.response]==1));
         speed(ispeed).psigMatrix(iratio,3) = numel([speed(ispeed).ratTrials(iratio).trials]);
     end
 
     speed(ispeed).psigResult = psignifit(speed(ispeed).psigMatrix, options);
-    figure
-    plotPsych(speed(ispeed).psigResult);
+    plotPsych(speed(ispeed).psigResult, plotOptions);
     title(['Speed: ' num2str(speed(ispeed).meanSpeed)]);
+    
+    plotOptions.dataColor = [1 0 0];
+    plotOptions.lineColor = [1 0 0];
 
 end
 
-
+hold off
 options = options2;
 
 for ispeed = 1:numel(meanSpeeds)
     for iratio = 1:numel(speed(ispeed).ratios)
-        speed(ispeed).abspsigMatrix(iratio,1) = round(abs(speed(ispeed).psigMatrix(iratio,1)));
+        speed(ispeed).abspsigMatrix(iratio,1) = abs(speed(ispeed).psigMatrix(iratio,1));
         speed(ispeed).abspsigMatrix(iratio,2) = numel(find([speed(ispeed).ratTrials(iratio).trials.result]~=0));
         speed(ispeed).abspsigMatrix(iratio,3) = numel([speed(ispeed).ratTrials(iratio).trials]);
     end

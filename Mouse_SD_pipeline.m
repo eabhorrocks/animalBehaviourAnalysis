@@ -2,8 +2,8 @@
 %set(0,'DefaultFigureWindowStyle','docked');
 
 
-%folder = 'X:\ibn-vision\DATA\SUBJECTS\M19144\SDTraining\191203'
-folder = 'X:\DATA\SUBJECTS\M19144\SDTraining\191203'
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining\191206'
+%folder = 'X:\DATA\SUBJECTS\M19145\SDTraining\191204'
 
 splitfold = split(folder, '\');
 %subj = splitfold{5};
@@ -88,8 +88,8 @@ hold off
 
 
 %%
-speedrun = plotPsychSDRatio(runningTrials, options, options2);
-speedmixed = plotPsychSDRatio(statTrials, options, options2);
+% speedrun = plotPsychSDRatio(runningTrials, options, options2);
+% speedmixed = plotPsychSDRatio(statTrials, options, options2);
 
 
 
