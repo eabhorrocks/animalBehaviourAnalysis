@@ -2,6 +2,8 @@ function speed = plotPsychSDRatio(validTrials, options, options2)
 
 meanSpeeds = unique([validTrials.geoMean]);
 
+figure,
+hold on
 for ispeed = 1:numel(meanSpeeds)
     speed(ispeed).meanSpeed = meanSpeeds(ispeed);
     speed(ispeed).ratios = [];
@@ -23,10 +25,9 @@ for ispeed = 1:numel(meanSpeeds)
         speed(ispeed).psigMatrix(iratio,2) = numel(find([speed(ispeed).ratTrials(iratio).trials.response]==1));
         speed(ispeed).psigMatrix(iratio,3) = numel([speed(ispeed).ratTrials(iratio).trials]);
     end
-    
-    figure
+
     speed(ispeed).psigResult = psignifit(speed(ispeed).psigMatrix, options);
-    plotPsych(speed(ispeed).psigResult);
+    plotPsych(speed(ispeed).psigResult, plotOptions);
     title(['Speed: ' num2str(speed(ispeed).meanSpeed)]);
     
 

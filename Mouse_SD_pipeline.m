@@ -2,7 +2,7 @@
 %set(0,'DefaultFigureWindowStyle','docked');
 
 
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining\191206'
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19144\SDTraining\191211'
 %folder = 'X:\DATA\SUBJECTS\M19145\SDTraining\191204'
 
 splitfold = split(folder, '\');
@@ -63,6 +63,7 @@ speed = plotPsychSDRatio(validTrials, options, options2);
 
 %% metrics
 
+figure
 % get diff trial types
 correctTrials = validTrials(find([validTrials.result] ~= 0));
 incorrectTrials = validTrials(find([validTrials.result] == 0));
@@ -76,11 +77,13 @@ nStat = numel(find([validTrials.runbool]==0))
 nMixed = numel(find([validTrials.runbool]==-1))
 
 % 
+figure
 histogram([correctTrials.meanRunSpeed], 20, 'FaceAlpha', 0.5), hold on
 histogram([incorrectTrials.meanRunSpeed], 20, 'FaceAlpha', 0.5)
 title('mean run speed'), box off
 hold off
 
+figure
 histogram([correctTrials.varRunSpeed], 20, 'FaceAlpha', 0.5), hold on
 histogram([incorrectTrials.varRunSpeed], 20, 'FaceAlpha', 0.5)
 title('var run speed'), box off
