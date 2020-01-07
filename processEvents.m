@@ -36,18 +36,18 @@ events.trial.respOpenidx = find(events.tags=="respOPEN");
 events.trial.respCloseidx = find(events.tags=="respCLOSED");
 
 
-for itrial = 1:nstimON % find next event tags with > index
-    if ~(events.trial.sonidx(itrial) < events.trial.moveidx(itrial) < ...
-            events.trial.soffidx(itrial))
-    error(['trial events are not in correct order for trial: ' num2str(itrial)])
-    end
-end
-
-for itrial = 1:nrespOPEN
-    if ~(events.trial.respOpenidx(itrial) < events.trial.respCloseidx(itrial))
-        error(['response window events are not in correct order for trial: ' num2str(itrial)])
-    end
-end
+% for itrial = 1:nstimON % find next event tags with > index
+%     if ~(events.trial.sonidx(itrial) < events.trial.moveidx(itrial) < ...
+%             events.trial.soffidx(itrial))
+%     warning(['trial events are not in correct order for trial: ' num2str(itrial)])
+%     end
+% end
+% 
+% for itrial = 1:nrespOPEN
+%     if ~(events.trial.respOpenidx(itrial) < events.trial.respCloseidx(itrial))
+%         warning(['response window events are not in correct order for trial: ' num2str(itrial)])
+%     end
+% end
     
     
 % check for incomplete trials and delete tags from them

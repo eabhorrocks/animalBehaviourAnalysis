@@ -1,18 +1,16 @@
-function plotHandle = plotSDActiveTrials(trial,titleString,saveflag)
+function plotHandle = plotSDenbloc(trialsToPlot,titleString,saveflag)
 
-%% plot all active trials from a session together
-% all relevant blocks mark as 'active'
-% for each speed diff, group all those trials together,
-% plot those trials, with the speed colour to the right
-% load colormap
+%% plot trials en bloc
+
 rbcmap = loadrbcolormap;
-plotTrials = trial(find([trial.block2]==1));
-uniqueSDs = unique([plotTrials.SD]);
+plotTrials = trialsToPlot;
+uniqueSDs = unique([plotTrials.geoRatio]);
 
 sdtrial = struct();
 for isd = 1:numel(uniqueSDs)
-    sdtrial(isd).trials = plotTrials(find([plotTrials.SD]==uniqueSDs(isd)));
+    sdtrial(isd).trials = plotTrials(find([plotTrials.geoRatio]==uniqueSDs(isd)));
 end
+
 %%
 trialCounter = 0;
 yticks = trialCounter;
@@ -24,14 +22,14 @@ for isd = 1:numel(uniqueSDs)
         p = plot(sdtrial(isd).trials(itrial).licksL, repelem(trialCounter, 1, numel(sdtrial(isd).trials(itrial).licksL)), 'b.');
         p2= plot(sdtrial(isd).trials(itrial).licksR, repelem(trialCounter, 1, numel(sdtrial(isd).trials(itrial).licksR)), 'r.');
         
-        if uniqueSDs(isd) < 0
+        if uniqueSDs(isd) < 1
             if ~isempty(sdtrial(isd).trials(itrial).rewardtime)
                 p3= plot(sdtrial(isd).trials(itrial).rewardtime, trialCounter, 'bo');
             end
             if ~isempty(sdtrial(isd).trials(itrial).manualRewardTime)
                 p4 = plot(sdtrial(isd).trials(itrial).manualRewardTime, trialCounter, 'bs');
             end
-        elseif uniqueSDs(isd) > 0
+        elseif uniqueSDs(isd) > 1
             if ~isempty(sdtrial(isd).trials(itrial).rewardtime)
                 p3= plot(sdtrial(isd).trials(itrial).rewardtime, trialCounter, 'ro');
             end
@@ -40,14 +38,14 @@ for isd = 1:numel(uniqueSDs)
             end
         end
         
-        
     end
     plot(-2:10, repelem(trialCounter + 0.5, 13, 1), 'k--', 'Color', 'k')
     speedDiff = uniqueSDs(isd);
-    if speedDiff > 0
+    if speedDiff > 1
         idx = round(32+3*speedDiff);
         pCol = rbcmap(idx,:);
-    elseif speedDiff < 0
+    elseif speedDiff < 1
+        speedDiff = -(1/speedDiff);
         idx = round(32+3*speedDiff);
         pCol = rbcmap(idx,:);
     end
@@ -57,7 +55,7 @@ for isd = 1:numel(uniqueSDs)
     
 end
 
-xlim([-1 8])
+xlim([-1 8]);
 
 %% trial schematic stuff
 fill([-2 0 0 3.5 3.5 10],  [trialCounter+10 trialCounter+10 trialCounter+20 ...
@@ -114,6 +112,7 @@ a.YTickLabels{1} = 'Trial-mean licks (Hz)';
 a.YTickLabels{2} = [num2str(maxlickfreq)];
 a.YTickLabels{3} = ' ';
 title(titleString)
+
 %%
 plotHandle = gcf;
 

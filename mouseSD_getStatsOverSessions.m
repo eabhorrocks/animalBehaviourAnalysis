@@ -1,14 +1,24 @@
 %% Mouse Speed Discrimination analysis pipeline
 %set(0,'DefaultFigureWindowStyle','docked');
 
+mouseDir = 'X:\ibn-vision\DATA\SUBJECTS\M19144\SDTraining';
+splitfold = split(mouseDir, '\');
+subj = splitfold{5};
 
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining\191213'
-%folder = 'X:\DATA\SUBJECTS\M19145\SDTraining\191204'
+[trainingDays]  = GetSubDirsFirstLevelOnly(mouseDir);
+nTrainingDays = numel(trainingDays);
 
-splitfold = split(folder, '\');
-%subj = splitfold{5};
-%seshDate = splitfold{7};
+day = struct;
+tic
 
+% 145 using 10:30 for full active, 26:30 (both)
+% 144 using 22nd nov
+for iDay = 14:nTrainingDays
+    iDay
+    
+folder = [mouseDir '\' char(trainingDays(iDay))];
+    
+   
 %% import csv files
 [eventsRaw, paramsRaw, wheelRaw, licksRaw, nSessions] = importSessionFilesConcat(folder);
 
@@ -42,17 +52,20 @@ end
 % engaged, stat/walk, diff speeds(?)
 
 activeTrials = trials(find([trials.type]=='activev2'));
-meanSpeeds = unique([trials.geoMean]);
 validTrials = activeTrials(find([activeTrials.engaged]==1));
+meanSpeeds = unique([validTrials.geoMean]);
 
-for ispeed = 1:numel(meanSpeeds)
-    speed(ispeed).trials = validTrials(find([validTrials.geoMean]==meanSpeeds(ispeed)));
-end
+% for ispeed = 1:numel(meanSpeeds)
+%     speed(ispeed).trials = validTrials(find([validTrials.geoMean]==meanSpeeds(ispeed)));
+% end
 
-%% session plot
-for ispeed = 1:numel(meanSpeeds)
-plotHandle = plotSDenbloc(speed(ispeed).trials,['speed: ' num2str(meanSpeeds(ispeed))],0);
-end
+
+day(iDay).nActiveTrials = numel(activeTrials);
+day(iDay).nEngagedTrials = numel(validTrials);
+day(iDay).pEngaged = day(iDay).nEngagedTrials/day(iDay).nActiveTrials;
+day(iDay).RT = nanmean([validTrials.RT]);
+
+
 
 %% plot psychometric curves for each speed
 
@@ -71,6 +84,10 @@ options2.poolMaxLength = inf;
 options2.nblocks = 1;
 
 speed = plotPsychSDRatio(validTrials, options, options2);
+day(iDay).t70 = nanmean([speed.t70]);
+day(iDay).bestt70 = min([speed.t70]);;
+day(iDay).bias = nanmean([speed.t50]);
+
 
 %% metrics
 
@@ -82,31 +99,64 @@ runningTrials = validTrials(find([validTrials.runbool]==1));
 mixedTrials = validTrials(find([validTrials.runbool]==-1));
 statTrials = validTrials(find([validTrials.runbool]==0));
 
+rSpeed = plotPsychSDRatio(runningTrials, options, options2);
+day(iDay).run.t70 = nanmean([rSpeed.t70]);
+day(iDay).run.bestt70 = min([rSpeed.t70]);
+day(iDay).run.bias = nanmean([rSpeed.t50]);
+
+try
+sSpeed = plotPsychSDRatio(statTrials, options, options2);
+catch
+    warning('failed to get stat fit')
+    day(iDay).stat.t70 = nan;
+    day(iDay).stat.bestt70 = nan;
+    day(iDay).stat.bias = nan;
+end
+day(iDay).stat.t70 = nanmean([sSpeed.t70]);
+day(iDay).stat.bestt70 = min([sSpeed.t70]);
+day(iDay).stat.bias = nanmean([sSpeed.t50]);
+
+day(iDay).run.RT = nanmean([runningTrials.RT]);
+day(iDay).stat.RT = nanmean([statTrials.RT]);
+
+
+
 % running
-nRunning = numel(find([validTrials.runbool]==1))
-nStat = numel(find([validTrials.runbool]==0))
-nMixed = numel(find([validTrials.runbool]==-1))
+nRunning = numel(find([validTrials.runbool]==1));
+nStat = numel(find([validTrials.runbool]==0));
+nMixed = numel(find([validTrials.runbool]==-1));
 
+
+day(iDay).nRunning = nRunning;
+day(iDay).nStat = nStat;
+day(iDay).nMixed = nMixed;
+day(iDay).pRunning = day(iDay).nRunning/day(iDay).nEngagedTrials;
+day(iDay).pStat = day(iDay).nStat/day(iDay).nEngagedTrials;
+
+day(iDay).speedT70Array = [[sSpeed.t70];[rSpeed.t70]];
+
+
+% % 
+% figure
+% histogram([correctTrials.meanRunSpeed], 20, 'FaceAlpha', 0.5), hold on
+% histogram([incorrectTrials.meanRunSpeed], 20, 'FaceAlpha', 0.5)
+% title('mean run speed'), box off
+% hold off
 % 
-figure
-histogram([correctTrials.meanRunSpeed], 20, 'FaceAlpha', 0.5), hold on
-histogram([incorrectTrials.meanRunSpeed], 20, 'FaceAlpha', 0.5)
-title('mean run speed'), box off
-hold off
+% figure
+% histogram([correctTrials.varRunSpeed], 20, 'FaceAlpha', 0.5), hold on
+% histogram([incorrectTrials.varRunSpeed], 20, 'FaceAlpha', 0.5)
+% title('var run speed'), box off
+% hold off
+% 
+% figure
+% histogram([correctTrials.RT], 20, 'FaceAlpha', 0.5), hold on
+% histogram([incorrectTrials.RT], 20, 'FaceAlpha', 0.5)
+% title('RTs'), box off
+% hold off
 
-figure
-histogram([correctTrials.varRunSpeed], 20, 'FaceAlpha', 0.5), hold on
-histogram([incorrectTrials.varRunSpeed], 20, 'FaceAlpha', 0.5)
-title('var run speed'), box off
-hold off
-
-figure
-histogram([correctTrials.RT], 20, 'FaceAlpha', 0.5), hold on
-histogram([incorrectTrials.RT], 20, 'FaceAlpha', 0.5)
-title('RTs'), box off
-hold off
-
-
+end
+toc
 
 %%
 

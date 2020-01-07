@@ -24,10 +24,10 @@ for ispeed = 1:numel(meanSpeeds)
         speed(ispeed).psigMatrix(iratio,3) = numel([speed(ispeed).ratTrials(iratio).trials]);
     end
     
-    figure
     speed(ispeed).psigResult = psignifit(speed(ispeed).psigMatrix, options);
-    plotPsych(speed(ispeed).psigResult);
-    title(['Speed: ' num2str(speed(ispeed).meanSpeed)]);
+%     figure
+%     plotPsych(speed(ispeed).psigResult);
+%     title(['Speed: ' num2str(speed(ispeed).meanSpeed)]);
     
 
 
@@ -45,7 +45,12 @@ for ispeed = 1:numel(meanSpeeds)
     
     
     speed(ispeed).abspsigResult = psignifit(speed(ispeed).abspsigMatrix,options);
-    figure
-    plotPsych(speed(ispeed).abspsigResult);
-    title(['(abs) Speed: ' num2str(speed(ispeed).meanSpeed)])
+%     figure
+%     plotPsych(speed(ispeed).abspsigResult);
+%     title(['(abs) Speed: ' num2str(speed(ispeed).meanSpeed)])
+    
+    speed(ispeed).t50 = getThreshold(speed(ispeed).psigResult, 0.5, true);
+    speed(ispeed).t70 = getThreshold(speed(ispeed).abspsigResult, 0.7, true);
+    
+    
 end
