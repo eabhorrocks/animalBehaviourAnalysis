@@ -1,10 +1,10 @@
 %% set folder and tags of blocks
 format compact
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining\191115'
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining\191213'
 
 saveflag = 0;
 bonsai_with_responses = 1; % for new version which saves the response and outcome of the trial..
-blockTags = {'activeany', 'activenoabort'};
+blockTags = {'activev2'};
 
 %blockTags = {'passive', 'activeany', 'activenoabort', 'active', 'activevary','activevaryL','activehard'};
 
@@ -72,33 +72,33 @@ plotSDpsych(trial, metrics)
 % previous choice
 
 % get rid of invalid trials!
-
-[y, s1, s2, prevAns, prevChoice, correctVec, answerVec] = makePsytrackInputs(trial);
-
-inputFile = [newDir, '\' dirName 'psyinputs.mat'];
-outputFile = [newDir, '\' dirName 'psyoutput.mat'];
-save(inputFile,...
-    'y', 's1', 's2', 'prevAns', 'prevChoice', 'answerVec', 'correctVec');
-
-sysCommand = ['C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\Scripts\python.exe C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\runPsyTrackSingleSesh.py -i ',...
-   inputFile ' -o ' outputFile];
-
-% sysCommand = ['C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\Scripts\python.exe C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\runPsyTrackSingleSeshSimple.py -i ',...
-%     inputFile ' -o ' outputFile];
-
-system(sysCommand)
-
-load(outputFile)
-hold off, figure, hold on
-shadedErrorBar(1:numel(biasw),biasw, biasint./2, 'lineProps', 'k')
-shadedErrorBar(1:numel(biasw),s1w, s1int./2, 'lineProps', 'b')
-shadedErrorBar(1:numel(biasw),s2w, s2int./2, 'lineProps', 'r')
-shadedErrorBar(1:numel(biasw),pansw, pansint./2, 'lineProps', 'm')
-shadedErrorBar(1:numel(biasw),pchoicew, pchoiceint./2, 'lineProps', 'c')
-
-legend({'bias', 'left vel', 'right vel', 'prev ans', 'prev choice'})
-ylabel('Weights');
-xlabel('Trial number')
+% 
+% [y, s1, s2, prevAns, prevChoice, correctVec, answerVec] = makePsytrackInputs(trial);
+% 
+% inputFile = [newDir, '\' dirName 'psyinputs.mat'];
+% outputFile = [newDir, '\' dirName 'psyoutput.mat'];
+% save(inputFile,...
+%     'y', 's1', 's2', 'prevAns', 'prevChoice', 'answerVec', 'correctVec');
+% 
+% sysCommand = ['C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\Scripts\python.exe C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\runPsyTrackSingleSesh.py -i ',...
+%    inputFile ' -o ' outputFile];
+% 
+% % sysCommand = ['C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\Scripts\python.exe C:\Users\edward.horrocks\PycharmProjects\pTrackProject\venv\runPsyTrackSingleSeshSimple.py -i ',...
+% %     inputFile ' -o ' outputFile];
+% 
+% system(sysCommand)
+% 
+% load(outputFile)
+% hold off, figure, hold on
+% shadedErrorBar(1:numel(biasw),biasw, biasint./2, 'lineProps', 'k')
+% shadedErrorBar(1:numel(biasw),s1w, s1int./2, 'lineProps', 'b')
+% shadedErrorBar(1:numel(biasw),s2w, s2int./2, 'lineProps', 'r')
+% shadedErrorBar(1:numel(biasw),pansw, pansint./2, 'lineProps', 'm')
+% shadedErrorBar(1:numel(biasw),pchoicew, pchoiceint./2, 'lineProps', 'c')
+% 
+% legend({'bias', 'left vel', 'right vel', 'prev ans', 'prev choice'})
+% ylabel('Weights');
+% xlabel('Trial number')
 
 %% dev catenate
 % 

@@ -45,9 +45,9 @@ for ispeed = 1:numel(meanSpeeds)
     
     
     speed(ispeed).abspsigResult = psignifit(speed(ispeed).abspsigMatrix,options);
-%     figure
-%     plotPsych(speed(ispeed).abspsigResult);
-%     title(['(abs) Speed: ' num2str(speed(ispeed).meanSpeed)])
+%      figure
+%      plotPsych(speed(ispeed).abspsigResult);
+     title(['(abs) Speed: ' num2str(speed(ispeed).meanSpeed)])
     
     speed(ispeed).t50 = getThreshold(speed(ispeed).psigResult, 0.5, true);
     speed(ispeed).t70 = getThreshold(speed(ispeed).abspsigResult, 0.7, true);

@@ -1,7 +1,7 @@
 %% Mouse Speed Discrimination analysis pipeline
 %set(0,'DefaultFigureWindowStyle','docked');
 
-mouseDir = 'X:\ibn-vision\DATA\SUBJECTS\M19144\SDTraining';
+mouseDir = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining';
 splitfold = split(mouseDir, '\');
 subj = splitfold{5};
 
@@ -11,9 +11,9 @@ nTrainingDays = numel(trainingDays);
 day = struct;
 tic
 
-% 145 using 10:30 for full active, 26:30 (both)
-% 144 using 22nd nov
-for iDay = 14:nTrainingDays
+% 145 using 10:30 for full active, 26:30 (both), (26:29) for full
+% 144 using 22nd nov (14th session)
+for iDay = 10:nTrainingDays
     iDay
     
 folder = [mouseDir '\' char(trainingDays(iDay))];
@@ -85,7 +85,7 @@ options2.nblocks = 1;
 
 speed = plotPsychSDRatio(validTrials, options, options2);
 day(iDay).t70 = nanmean([speed.t70]);
-day(iDay).bestt70 = min([speed.t70]);;
+day(iDay).bestt70 = min([speed.t70]);
 day(iDay).bias = nanmean([speed.t50]);
 
 
@@ -134,6 +134,7 @@ day(iDay).pRunning = day(iDay).nRunning/day(iDay).nEngagedTrials;
 day(iDay).pStat = day(iDay).nStat/day(iDay).nEngagedTrials;
 
 day(iDay).speedT70Array = [[sSpeed.t70];[rSpeed.t70]];
+day(iDay).trials = validTrials;
 
 
 % % 
