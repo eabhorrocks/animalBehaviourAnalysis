@@ -15,13 +15,17 @@ end
 trialCounter = 0;
 yticks = trialCounter;
 figure, hold on,
-plot(-2:10, zeros(13,1), 'k--')
+%plot(-2:10, zeros(13,1), 'k--')
 for isd = 1:numel(uniqueSDs)
     for itrial = 1:numel(sdtrial(isd).trials)
         trialCounter = trialCounter + 1;
         p = plot(sdtrial(isd).trials(itrial).licksL, repelem(trialCounter, 1, numel(sdtrial(isd).trials(itrial).licksL)), '.', 'Color', [0, 0.4470, 0.7410]);
         p2= plot(sdtrial(isd).trials(itrial).licksR, repelem(trialCounter, 1, numel(sdtrial(isd).trials(itrial).licksR)), '.', 'Color', [0.8500, 0.3250, 0.0980]);
         
+        % mark if incorrect
+        if sdtrial(isd).trials(itrial).result == 0
+            p3 = plot([6.75 7], [trialCounter trialCounter], 'Color', [.5 0 .5], 'LineWidth', 0.5);
+        end
 %         if uniqueSDs(isd) < 1
 %             if ~isempty(sdtrial(isd).trials(itrial).rewardtime)
 %                 p3= plot(sdtrial(isd).trials(itrial).rewardtime, trialCounter, 'o', 'Color', [0, 0.4470, 0.7410]);

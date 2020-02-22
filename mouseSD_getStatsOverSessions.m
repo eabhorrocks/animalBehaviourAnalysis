@@ -1,7 +1,7 @@
 %% Mouse Speed Discrimination analysis pipeline
 %set(0,'DefaultFigureWindowStyle','docked');
 
-mouseDir = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining';
+mouseDir = 'X:\ibn-vision\DATA\SUBJECTS\M19144\SDTraining';
 splitfold = split(mouseDir, '\');
 subj = splitfold{5};
 
@@ -11,9 +11,9 @@ nTrainingDays = numel(trainingDays);
 day = struct;
 tic
 
-% 145 using 10:30 for full active, 26:30 (both), (26:29) for full
-% 144 using 22nd nov (14th session)
-for iDay = 10:nTrainingDays
+% 145 using 10:30 for full active, 26:30 (both), 
+% 144 using 22nd nov (14th session) (26:29) for full, might be 24:27
+for iDay = 14:nTrainingDays
     iDay
     
 folder = [mouseDir '\' char(trainingDays(iDay))];
@@ -63,7 +63,8 @@ meanSpeeds = unique([validTrials.geoMean]);
 day(iDay).nActiveTrials = numel(activeTrials);
 day(iDay).nEngagedTrials = numel(validTrials);
 day(iDay).pEngaged = day(iDay).nEngagedTrials/day(iDay).nActiveTrials;
-day(iDay).RT = nanmean([validTrials.RT]);
+day(iDay).RTmean = nanmean([validTrials.RT]);
+day(iDay).RTvar = nanvar([validTrials.RT]);
 
 
 

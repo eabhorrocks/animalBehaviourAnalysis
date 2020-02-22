@@ -118,7 +118,7 @@ ylim([0 450])
 
 
 allTrials = plotSDenbloc(validTrials,[],0);
-xlim([-1 7])
+xlim([-1 6.95])
 ylabel([])
 ylim([0 900])
 set(gca, 'Ycolor', 'w')
@@ -145,4 +145,9 @@ RunTrials = allTrials(find([allTrials.runbool]==1));
 StatTrials = allTrials(find([allTrials.runbool]==0));
 
 plotPsychSDRatio_RunvsStat(RunTrials, StatTrials, options)
+
+
+%%
+
+load('m145_alltrials.mat')
 

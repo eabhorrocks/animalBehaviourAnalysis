@@ -2,7 +2,7 @@
 %set(0,'DefaultFigureWindowStyle','docked');
 
 
-folder = 'X:\ibn-vision\DATA\SUBJECTS\M19144\SDTraining\191219'
+folder = 'X:\ibn-vision\DATA\SUBJECTS\M19145\SDTraining\191122'
 %folder = 'X:\DATA\SUBJECTS\M19145\SDTraining\191204'
 
 splitfold = split(folder, '\');

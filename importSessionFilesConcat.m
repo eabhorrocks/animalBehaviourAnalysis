@@ -26,14 +26,14 @@ for iSession = 1:numEvents
     session(iSession).wheelFile = wheelFiles(iSession).name; 
 end
 
-% double check same dates
-for iSession = 1:numel(session)
-    eventDate = eventFiles(iSession).date;
-    otherDates = {lickFiles(iSession).date, paramFiles(iSession).date, wheelFiles(iSession).date};
-    if ~all(vertcat(cellfun(@(c)strcmp(c,eventDate),otherDates,'UniformOutput',true)))
-        error(['dates of session files don''t line up for eventDate: ' eventDate]);
-    end
-end
+% double check same dates - this breaks things if modified csv
+% for iSession = 1:numel(session)
+%     eventDate = eventFiles(iSession).date;
+%     otherDates = {lickFiles(iSession).date, paramFiles(iSession).date, wheelFiles(iSession).date};
+%     if ~all(vertcat(cellfun(@(c)strcmp(c,eventDate),otherDates,'UniformOutput',true)))
+%         error(['dates of session files don''t line up for eventDate: ' eventDate]);
+%     end
+% end
 
 %% loop through sessions loading event files
 
